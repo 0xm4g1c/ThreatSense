@@ -65,7 +65,7 @@ if datavisual_choice == "Compromised Credentials":
         st.write("Look up information about a specific IP:link: address")
         ip_input = st.text_input('Input IP Address',)
         # Create an instance of an ipdata object. Replace `test` with your API Key
-        ipdata = ipdata.IPData('test')
+        ipdata = ipdata.IPData('API_Key')
         # '69.78.70.144'
         ip_response = ipdata.lookup("{}".format(ip_input))
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
@@ -75,7 +75,7 @@ if datavisual_choice == "Compromised Credentials":
         #    st.write(ip_response) 
 
         # drawing IP locality map
-        # Append Lat and Lon values to empty dict
+        # Append Lat and Lon values to empty list
         geo_loc= []
         geo_loc.append(ip_response.get("latitude"))
         geo_loc.append(ip_response.get("longitude"))
