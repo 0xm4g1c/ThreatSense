@@ -14,42 +14,37 @@ from ipdata import ipdata
 
 st.title("ThreatSense :computer:")
 
-# Caching -  reduce load time 
-@st.cache(suppress_st_warning=True, hash_funcs={pd.core.frame.DataFrame: lambda _: None}, allow_output_mutation=True)
-def load_data():
-    uploaded_file = st.file_uploader("Choose a file..", type = "csv")
-    if uploaded_file is not None:
-        return uploaded_file
-
-uploaded_file = load_data()
-
 
 # sidebars
-
 datavisual_choice = st.sidebar.radio("Navigate Pages",
-("Home Page", "Compromised Credentials"))
+("Home Page", "File Upload", "Compromised Credentials"))
 
 # welcome page
 if datavisual_choice == "Home Page":
-    # call/load above function to a dataframe
-    #if st.checkbox("Show first rows of the data"):
-     #  st.write(data)
-      #  st.write(data.shape) # returnd dimensionality of the dataframe (inside, outside)
+    st.header("**An Open-Source Attack Surface Management Framework**")
+    st.subheader("**Find Technical Information About Internet Assets**")
+    # home page promotional video
+    src = "https://www.youtube.com/watch?v=wzsSkcgtDWo"
+    st.video(src, start_time=0) 
+
+    #  st.write(data.shape) # returnd dimensionality of the dataframe (inside, outside)
     # Do not exhaust your free map reloads
     #if st.checkbox("Show Map"):
     #st.plotly_chart(display_map(data))
-    st.header("**An Open-Source Attack Surface Management Framework**")
-    st.subheader("**Find Technical Information About Internet Assets**")
+    
 
-    # home page promotional video
-    src = "https://www.youtube.com/watch?v=wzsSkcgtDWo"
-    st.video(src, start_time=0)
+if datavisual_choice =="File Upload":
+    # Caching -  reduce load time 
+    uploaded_file = st.file_uploader("Choose a file..", type = "csv")
+    
+        
+
     
 # Cyber Intelligence Page.
 if datavisual_choice == "Compromised Credentials":
-    
-    tools_choice = st.selectbox("Cyber Intelligence Tools:",["Email", "IP", "URL"])
-
+    st.markdown("**Choose tools from the dropdown**")
+    tools_choice = st.selectbox("Cyber Intelligence Tools:",["—", "Email", "IP", "URL"])
+            
     if tools_choice == "Email":
         st.markdown("Check your **Email** status against a collection of publically available data breaches")
         # E-mail API endpoint - 'http://emailrep.io/bsheffield432@gmail.com'
@@ -66,7 +61,7 @@ if datavisual_choice == "Compromised Credentials":
         st.write("Look up information about a specific IP:link: address")
         ip_input = st.text_input('Input IP Address',)
         # Create an instance of an ipdata object. Replace `test` with your API Key
-        ipdata = ipdata.IPData(ip_api_key)
+        ipdata = ipdata.IPData(config.ip_api_key)
         # '69.78.70.144'
         ip_response = ipdata.lookup("{}".format(ip_input))
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
@@ -128,7 +123,7 @@ if datavisual_choice == "Compromised Credentials":
         url_endpoint = 'https://www.virustotal.com/vtapi/v2/url/report'
         url_input = st.text_input('Input URL',)
         #Replace `test` with your API Key
-        params = {'apikey': url_api_key, 'resource':url_input}
+        params = {'apikey': config.url_api_key, 'resource':url_input}
         url_response = requests.get(url_endpoint, params=params)
         st.json(url_response.text)
 
