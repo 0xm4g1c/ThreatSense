@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt # resize seaborn figure to be more readable
 import requests
 import pydeck as pdk
 import config
+import hashlib
 from folium.plugins import HeatMap
 from PIL import Image
 from ipdata import ipdata
 
 
 st.title("ThreatSense :computer:")
-
 
 # sidebars
 datavisual_choice = st.sidebar.radio("Navigate Pages",
@@ -27,19 +27,29 @@ if datavisual_choice == "Home Page":
     src = "https://www.youtube.com/watch?v=wzsSkcgtDWo"
     st.video(src, start_time=0) 
 
+if datavisual_choice =="File Upload":
+    # Caching -  reduce load time 
+    uploaded_file = st.file_uploader("Choose a file to scan..")
+    if uploaded_file is None:
+        st.write("Please upload a file to be scanned")
+    
+    if uploaded_file is not None:
+        # getting hash value of uploaded file
+        bytes = uploaded_file.read()
+        uploaded_file_hash = hashlib.md5(bytes).hexdigest()
+        # add hash to endpoint
+        file_endpoint = "https://www.virustotal.com/api/v3/files/" +  uploaded_file_hash
+        file_headers = {'x-apikey': config.file_api_key}
+        file_response = requests.get(file_endpoint, headers=file_headers)
+        st.json(file_response.text)
+        #st.write(data)
+    
     #  st.write(data.shape) # returnd dimensionality of the dataframe (inside, outside)
     # Do not exhaust your free map reloads
     #if st.checkbox("Show Map"):
     #st.plotly_chart(display_map(data))
     
-
-if datavisual_choice =="File Upload":
-    # Caching -  reduce load time 
-    uploaded_file = st.file_uploader("Choose a file..", type = "csv")
-    
-        
-
-    
+   
 # Cyber Intelligence Page.
 if datavisual_choice == "Compromised Credentials":
     st.markdown("**Choose tools from the dropdown**")
@@ -66,9 +76,9 @@ if datavisual_choice == "Compromised Credentials":
         ip_response = ipdata.lookup("{}".format(ip_input))
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
 
-        #if st.checkbox("Show IP content(JSON):"):
-        #    st.write("Collapse/Expand")
-        #    st.write(ip_response) 
+        if st.checkbox("Show IP content(JSON):"):
+            st.write("Collapse/Expand")
+            st.write(ip_response) 
 
         # drawing IP locality map
         # Append Lat and Lon values to empty list
@@ -78,7 +88,6 @@ if datavisual_choice == "Compromised Credentials":
         geo_loc.append(ip_response.get("country_name"))
         geo_loc.append(ip_response.get("city"))
         
-
         ip_map = [{'latitude':geo_loc[0], 'longitude':geo_loc[1],'country':geo_loc[2], 'city':geo_loc[3]}]
 
         # change list to dataframe
@@ -88,7 +97,7 @@ if datavisual_choice == "Compromised Credentials":
         st.dataframe(ip_map)
 
         st.pydeck_chart(pdk.Deck(
-        map_style='mapbox://styles/mapbox/light-v9',
+        map_style='mapbox://styles/mapbox/dark-v9',
         initial_view_state=pdk.ViewState(
             latitude=ip_map.at[0,'latitude'],
             longitude=ip_map.at[0,'longitude'],
@@ -123,8 +132,8 @@ if datavisual_choice == "Compromised Credentials":
         url_endpoint = 'https://www.virustotal.com/vtapi/v2/url/report'
         url_input = st.text_input('Input URL',)
         #Replace `test` with your API Key
-        params = {'apikey': config.url_api_key, 'resource':url_input}
-        url_response = requests.get(url_endpoint, params=params)
+        url_params = {'apikey': config.url_api_key, 'resource':url_input}
+        url_response = requests.get(url_endpoint, params=url_params)
         st.json(url_response.text)
 
 st.sidebar.info((
