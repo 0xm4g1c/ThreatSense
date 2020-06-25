@@ -6,6 +6,7 @@ import seaborn as sns # plots histogram
 import matplotlib.pyplot as plt # resize seaborn figure to be more readable
 import requests
 import pydeck as pdk
+import config
 from folium.plugins import HeatMap
 from PIL import Image
 from ipdata import ipdata
@@ -65,7 +66,7 @@ if datavisual_choice == "Compromised Credentials":
         st.write("Look up information about a specific IP:link: address")
         ip_input = st.text_input('Input IP Address',)
         # Create an instance of an ipdata object. Replace `test` with your API Key
-        ipdata = ipdata.IPData('API_Key')
+        ipdata = ipdata.IPData(ip_api_key)
         # '69.78.70.144'
         ip_response = ipdata.lookup("{}".format(ip_input))
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
@@ -127,7 +128,7 @@ if datavisual_choice == "Compromised Credentials":
         url_endpoint = 'https://www.virustotal.com/vtapi/v2/url/report'
         url_input = st.text_input('Input URL',)
         #Replace `test` with your API Key
-        params = {'apikey': 'test', 'resource':(url_input)}
+        params = {'apikey': url_api_key, 'resource':url_input}
         url_response = requests.get(url_endpoint, params=params)
         st.json(url_response.text)
 
