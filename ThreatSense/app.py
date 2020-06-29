@@ -42,7 +42,6 @@ if datavisual_choice =="File Upload":
         file_headers = {'x-apikey': config.file_api_key}
         file_response = requests.get(file_endpoint, headers=file_headers)
         st.json(file_response.text)
-        #st.write(data)
     
     #  st.write(data.shape) # returnd dimensionality of the dataframe (inside, outside)
     # Do not exhaust your free map reloads
@@ -68,17 +67,18 @@ if datavisual_choice == "Compromised Credentials":
 
     if tools_choice == "IP":
         # IP API endpoint - http://api.cybercure.ai/feed/search?value=
-        st.write("Look up information about a specific IP:link: address")
         ip_input = st.text_input('Input IP Address',)
-        # Create an instance of an ipdata object. Replace `test` with your API Key
+        # Create an instance of an ipdata object. Replace "config.ip_api_key" with your API Key
         ipdata = ipdata.IPData(config.ip_api_key)
-        # '69.78.70.144'
         ip_response = ipdata.lookup("{}".format(ip_input))
+        st.write("Look up information about a specific IP:link: address")
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
 
         if st.checkbox("Show IP content(JSON):"):
-            st.write("Collapse/Expand")
             st.write(ip_response) 
+
+        # verify from nested dictionary, to be included in "is_Threat" column in table 
+        is_threat = ip_response["threat"]["is_known_attacker"]
 
         # drawing IP locality map
         # Append Lat and Lon values to empty list
@@ -87,43 +87,45 @@ if datavisual_choice == "Compromised Credentials":
         geo_loc.append(ip_response.get("longitude"))
         geo_loc.append(ip_response.get("country_name"))
         geo_loc.append(ip_response.get("city"))
-        
-        ip_map = [{'latitude':geo_loc[0], 'longitude':geo_loc[1],'country':geo_loc[2], 'city':geo_loc[3]}]
+        geo_loc.append(is_threat)
+
+        # draw table with column names and values
+        ip_map = [{'latitude':geo_loc[0], 'longitude':geo_loc[1],'country':geo_loc[2], 'city':geo_loc[3], 'is_Threat':geo_loc[4]}]
 
         # change list to dataframe
-        ip_map = pd.DataFrame(ip_map)
-
+        ip_values = pd.DataFrame(ip_map)
         st.success("A summary of  IP Address {}".format(ip_input))
-        st.dataframe(ip_map)
+        st.dataframe(ip_values)
 
-        st.pydeck_chart(pdk.Deck(
-        map_style='mapbox://styles/mapbox/dark-v9',
-        initial_view_state=pdk.ViewState(
-            latitude=ip_map.at[0,'latitude'],
-            longitude=ip_map.at[0,'longitude'],
-            zoom=11,
-            pitch=50,
-        ),
-        layers=[
-            pdk.Layer(
-                'HexagonLayer',
-                data=ip_map,
-                get_position='[longitude, latitude]',
-                radius=200,
-                elevation_scale=4,
-                elevation_range=[0, 1000],
-                pickable=True,
-                extruded=True,
+        if st.checkbox("Show IP content(Map):"):
+            st.pydeck_chart(pdk.Deck(
+            map_style='mapbox://styles/mapbox/dark-v9',
+            initial_view_state=pdk.ViewState(
+                latitude=ip_map.at[0,'latitude'],
+                longitude=ip_map.at[0,'longitude'],
+                zoom=11,
+                pitch=50,
             ),
-            pdk.Layer(
-                'ScatterplotLayer',
-                data=ip_map,
-                get_position='[longitude, latitude]',
-                get_fill_color='[60, 220,255]',
-                get_radius=200,
-            ),
-        ],
-    ))
+            layers=[
+                pdk.Layer(
+                    'HexagonLayer',
+                    data=ip_map,
+                    get_position='[longitude, latitude]',
+                    radius=200,
+                    elevation_scale=4,
+                    elevation_range=[0, 1000],
+                    pickable=True,
+                    extruded=True,
+                ),
+                pdk.Layer(
+                    'ScatterplotLayer',
+                    data=ip_map,
+                    get_position='[longitude, latitude]',
+                    get_fill_color='[60, 220,255]',
+                    get_radius=200,
+                ),
+            ],
+        ))
 
     # recent scans
     
