@@ -30,8 +30,7 @@ if datavisual_choice == "Home Page":
 if datavisual_choice =="File Upload":
     # Caching -  reduce load time 
     uploaded_file = st.file_uploader("Choose a file to scan..")
-    if uploaded_file is None:
-        st.write("Please upload a file to be scanned")
+    
     
     if uploaded_file is not None:
         # getting hash value of uploaded file
