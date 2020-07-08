@@ -1,13 +1,11 @@
 import streamlit as st
 import pandas as pd
 import plotly_express as px
-import folium 
-import seaborn as sns # plots histogram
-import matplotlib.pyplot as plt # resize seaborn figure to be more readable
 import requests
 import pydeck as pdk
 import config
 import hashlib
+import json
 from folium.plugins import HeatMap
 from PIL import Image
 from ipdata import ipdata
@@ -29,9 +27,7 @@ if datavisual_choice == "Home Page":
 
 if datavisual_choice =="File Upload":
     # Caching -  reduce load time 
-    uploaded_file = st.file_uploader("Choose a file to scan..")
-    
-    
+    uploaded_file = st.file_uploader("Choose a file to scan..")    
     if uploaded_file is not None:
         # getting hash value of uploaded file
         bytes = uploaded_file.read()
@@ -40,14 +36,17 @@ if datavisual_choice =="File Upload":
         file_endpoint = "https://www.virustotal.com/api/v3/files/" +  uploaded_file_hash
         file_headers = {'x-apikey': config.file_api_key}
         file_response = requests.get(file_endpoint, headers=file_headers)
+        # modify file output to show: Hash value, file type, file name, submission period
         st.json(file_response.text)
-    
-    #  st.write(data.shape) # returnd dimensionality of the dataframe (inside, outside)
-    # Do not exhaust your free map reloads
-    #if st.checkbox("Show Map"):
-    #st.plotly_chart(display_map(data))
-    
-   
+        # load file output to a python object
+        file_details = json.loads(file_response.text)
+        st.success("Top 10 engines")
+        st.success("Basic Properties")
+        st.success("History")
+
+        #st.write(file_details['data']['attributes']['creation_date'])
+        #is_suspicious = file_details["error"]["code"]
+
 # Cyber Intelligence Page.
 if datavisual_choice == "Compromised Credentials":
     st.markdown("**Choose tools from the dropdown**")
