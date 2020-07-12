@@ -37,16 +37,32 @@ if datavisual_choice =="File Upload":
         file_headers = {'x-apikey': config.file_api_key}
         file_response = requests.get(file_endpoint, headers=file_headers)
         # modify file output to show: Hash value, file type, file name, submission period
-        st.json(file_response.text)
+        #st.json(file_response.text)
         # load file output to a python object
         file_details = json.loads(file_response.text)
-        st.success("Top 10 engines")
+        # lists to hold file details
+        # append into engines, engine name and category
+        if file_details['error']['code'] == 'NotFoundError' or "File not found" in file_details['error']['message']:
+            st.write('File Status:', uploaded_file_hash, 'is Harmless')
+        else:
+            properties=[]
+            properties.append(file_details['data']['attributes']['meaningful_name'])
+            properties.append(file_details['data']['attributes']['md5'])
+            properties.append(file_details['data']['attributes']['magic'])
+            properties.append(file_details['data']['attributes']['size'])
+            if file_details['data']['attributes']['total_votes']['malicious'] == 0:
+                properties.append("Harmless")
+            else:
+                properties.append("Harmful")
+
         st.success("Basic Properties")
-        st.success("History")
-
-        #st.write(file_details['data']['attributes']['creation_date'])
-        #is_suspicious = file_details["error"]["code"]
-
+        # draw table with column names and values
+        properties_table = [{'File Name':properties[0], 'File Hash':properties[1],'File Type':properties[2], 'File Size':properties[3], 'File Status':properties[4]}]
+        # change list to dataframe
+        properties_table = pd.DataFrame(properties_table)
+        pd.set_option('display.max_colwidth', -1)
+        st.write(properties_table)
+        
 # Cyber Intelligence Page.
 if datavisual_choice == "Compromised Credentials":
     st.markdown("**Choose tools from the dropdown**")
@@ -77,7 +93,7 @@ if datavisual_choice == "Compromised Credentials":
 
         # verify from nested dictionary, to be included in "is_Threat" column in table 
         is_threat = ip_response["threat"]["is_known_attacker"]
-
+            
         # drawing IP locality map
         # Append Lat and Lon values to empty list
         geo_loc= []
@@ -85,7 +101,11 @@ if datavisual_choice == "Compromised Credentials":
         geo_loc.append(ip_response.get("longitude"))
         geo_loc.append(ip_response.get("country_name"))
         geo_loc.append(ip_response.get("city"))
-        geo_loc.append(is_threat)
+        # 0 = Harmless , 1= Harmful
+        if is_threat == 0:
+            geo_loc.append("Harmless")
+        else:
+            geo_loc.append("Harmfull")
 
         # draw table with column names and values
         ip_map = [{'latitude':geo_loc[0], 'longitude':geo_loc[1],'country':geo_loc[2], 'city':geo_loc[3], 'is_Threat':geo_loc[4]}]
@@ -99,8 +119,8 @@ if datavisual_choice == "Compromised Credentials":
             st.pydeck_chart(pdk.Deck(
             map_style='mapbox://styles/mapbox/dark-v9',
             initial_view_state=pdk.ViewState(
-                latitude=ip_map.at[0,'latitude'],
-                longitude=ip_map.at[0,'longitude'],
+                latitude=ip_values.at[0,'latitude'],
+                longitude=ip_values.at[0,'longitude'],
                 zoom=11,
                 pitch=50,
             ),
