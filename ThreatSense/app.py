@@ -9,6 +9,7 @@ import json
 from folium.plugins import HeatMap
 from PIL import Image
 from ipdata import ipdata
+import numpy as np
 
 
 st.title("ThreatSense :computer:")
@@ -37,31 +38,38 @@ if datavisual_choice =="File Upload":
         file_headers = {'x-apikey': config.file_api_key}
         file_response = requests.get(file_endpoint, headers=file_headers)
         # modify file output to show: Hash value, file type, file name, submission period
-        #st.json(file_response.text)
         # load file output to a python object
         file_details = json.loads(file_response.text)
-        # lists to hold file details
-        # append into engines, engine name and category
-        if file_details['error']['code'] == 'NotFoundError' or "File not found" in file_details['error']['message']:
-            st.write('File Status:', uploaded_file_hash, 'is Harmless')
+        #st.json(file_details)
+        st.success("Basic Properties")
+        # check 'error' key in Json output, if True, file is safe
+        key = 'error'
+        if key in file_details:
+            st.write(pd.DataFrame({
+                'File Hash':[uploaded_file_hash],
+                'File Status':['Harmless']
+            }))
         else:
+            # lists to hold file details
             properties=[]
             properties.append(file_details['data']['attributes']['meaningful_name'])
             properties.append(file_details['data']['attributes']['md5'])
             properties.append(file_details['data']['attributes']['magic'])
             properties.append(file_details['data']['attributes']['size'])
             if file_details['data']['attributes']['total_votes']['malicious'] == 0:
-                properties.append("Harmless")
+                properties.append("Harmless") 
             else:
                 properties.append("Harmful")
 
-        st.success("Basic Properties")
-        # draw table with column names and values
-        properties_table = [{'File Name':properties[0], 'File Hash':properties[1],'File Type':properties[2], 'File Size':properties[3], 'File Status':properties[4]}]
-        # change list to dataframe
-        properties_table = pd.DataFrame(properties_table)
-        pd.set_option('display.max_colwidth', -1)
-        st.write(properties_table)
+            # draw table with column names and values
+            # change list to dataframe
+            st.write(pd.DataFrame({
+                "File Name":[properties[0]],
+                "File Hash":[properties[1]],
+                "File Type":[properties[2]],
+                "File Size":[properties[3]],
+                "File Status":[properties[4]]
+            }))
         
 # Cyber Intelligence Page.
 if datavisual_choice == "Compromised Credentials":
