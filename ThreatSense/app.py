@@ -6,11 +6,9 @@ import pydeck as pdk
 import config
 import hashlib
 import json
-from folium.plugins import HeatMap
 from PIL import Image
 from ipdata import ipdata
-import numpy as np
-
+from datetime import datetime, date
 
 st.title("ThreatSense :computer:")
 
@@ -26,6 +24,7 @@ if datavisual_choice == "Home Page":
     src = "https://www.youtube.com/watch?v=wzsSkcgtDWo"
     st.video(src, start_time=0) 
 
+# File upload
 if datavisual_choice =="File Upload":
     # Caching -  reduce load time 
     uploaded_file = st.file_uploader("Choose a file to scan..")    
@@ -40,37 +39,44 @@ if datavisual_choice =="File Upload":
         # modify file output to show: Hash value, file type, file name, submission period
         # load file output to a python object
         file_details = json.loads(file_response.text)
-        #st.json(file_details)
         st.success("Basic Properties")
         # check 'error' key in Json output, if True, file is safe
         key = 'error'
         if key in file_details:
-            st.write(pd.DataFrame({
-                'File Hash':[uploaded_file_hash],
-                'File Status':['Harmless']
-            }))
+            is_not_suspicious=[uploaded_file_hash,'Safe']
+            st.write(pd.DataFrame(is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
         else:
             # lists to hold file details
-            properties=[]
-            properties.append(file_details['data']['attributes']['meaningful_name'])
-            properties.append(file_details['data']['attributes']['md5'])
-            properties.append(file_details['data']['attributes']['magic'])
-            properties.append(file_details['data']['attributes']['size'])
+            is_suspicious=[]
+            is_suspicious.append(file_details['data']['attributes']['meaningful_name'])
+            is_suspicious.append(file_details['data']['attributes']['md5'])
+            is_suspicious.append(file_details['data']['attributes']['magic'])
+            is_suspicious.append(file_details['data']['attributes']['size'])
             if file_details['data']['attributes']['total_votes']['malicious'] == 0:
-                properties.append("Harmless") 
+                is_suspicious.append("Harmless") 
             else:
-                properties.append("Harmful")
+                is_suspicious.append("Harmful")
 
-            # draw table with column names and values
-            # change list to dataframe
-            st.write(pd.DataFrame({
-                "File Name":[properties[0]],
-                "File Hash":[properties[1]],
-                "File Type":[properties[2]],
-                "File Size":[properties[3]],
-                "File Status":[properties[4]]
-            }))
-        
+            # draw table with column names and valuesf
+            st.write(pd.DataFrame(is_suspicious, index=['File Name', 'File Hash', 'File Type', 'File Size', 'File Status'], columns=['Details']))
+
+            st.success("Submission History")
+            # Timestamps in file details is in Epoch time, seconds elapsed since 1/1/1997. 
+            epoch_timestamp = [
+                (file_details['data']['attributes']['creation_date']),
+                (file_details['data']['attributes']['first_submission_date']),
+                (file_details['data']['attributes']['last_analysis_date']),            
+            ]
+            # convert epoch - normal time
+            normal_timestamp = []
+            for i in epoch_timestamp:
+                normal_timestamp.append(datetime.fromtimestamp(i))
+
+            pd.set_option('display.expand_frame_repr', True)
+            st.write(pd.DataFrame(normal_timestamp, index=['Creation Date','Submission Date','Last Analysis Date'], columns=['Dates']))
+
+
+
 # Cyber Intelligence Page.
 if datavisual_choice == "Compromised Credentials":
     st.markdown("**Choose tools from the dropdown**")
