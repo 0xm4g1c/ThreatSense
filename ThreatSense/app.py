@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-import plotly_express as px
 import requests
 import pydeck as pdk
 import config
 import hashlib
 import json
+import re
 from PIL import Image
 from ipdata import ipdata
 from datetime import datetime, date
@@ -43,22 +43,18 @@ if datavisual_choice =="File Upload":
         # check 'error' key in Json output, if True, file is safe
         key = 'error'
         if key in file_details:
-            is_not_suspicious=[uploaded_file_hash,'Safe']
-            st.write(pd.DataFrame(is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
+            file_is_not_suspicious=[uploaded_file_hash,'Safe']
+            st.write(pd.DataFrame(file_is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
         else:
             # lists to hold file details
-            is_suspicious=[]
-            is_suspicious.append(file_details['data']['attributes']['meaningful_name'])
-            is_suspicious.append(file_details['data']['attributes']['md5'])
-            is_suspicious.append(file_details['data']['attributes']['magic'])
-            is_suspicious.append(file_details['data']['attributes']['size'])
+            file_is_suspicious=[file_details['data']['attributes']['meaningful_name'],file_details['data']['attributes']['md5'],file_details['data']['attributes']['magic'],file_details['data']['attributes']['size']]
             if file_details['data']['attributes']['total_votes']['malicious'] == 0:
-                is_suspicious.append("Harmless") 
+                file_is_suspicious.append("Harmless") 
             else:
-                is_suspicious.append("Harmful")
+                file_is_suspicious.append("Harmful")
 
             # draw table with column names and valuesf
-            st.write(pd.DataFrame(is_suspicious, index=['File Name', 'File Hash', 'File Type', 'File Size', 'File Status'], columns=['Details']))
+            st.write(pd.DataFrame(file_is_suspicious, index=['File Name', 'File Hash', 'File Type', 'File Size', 'File Status'], columns=['Details']))
 
             st.success("Submission History")
             # Timestamps in file details is in Epoch time, seconds elapsed since 1/1/1997. 
@@ -91,7 +87,18 @@ if datavisual_choice == "Compromised Credentials":
         email_query.append(email_input)
         email_status = "".join(email_query)
         email_response = requests.get('{}'.format(email_status))
-        st.json(email_response.text)
+        email_details =json.loads(email_response.text)
+        # access values from *emails_details* JSON object
+        # validate email input
+        regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
+        if (re.search(regex,email_input)):
+            email_is_suspicious=[email_details['email'],email_details['suspicious'],email_details['details']['credentials_leaked'],email_details['details']['malicious_activity'],email_details['details']['spam']]
+            #draw a table with *email_is_suspicious* dataframe    
+            st.write(pd.DataFrame(email_is_suspicious, index=['Email','Suspicious','Leaked Credentials','Malicious', 'Spam'], columns=['Details']))
+        elif 'fail' in email_details:
+            st.error("Exceeded daily Limit. please wait 24 hrs or visit emailrep.io/key for an api key")
+        else:
+            st.write("Invalid Email, Check Email Again")
 
     if tools_choice == "IP":
         # IP API endpoint - http://api.cybercure.ai/feed/search?value=
@@ -105,16 +112,11 @@ if datavisual_choice == "Compromised Credentials":
         if st.checkbox("Show IP content(JSON):"):
             st.write(ip_response) 
 
-        # verify from nested dictionary, to be included in "is_Threat" column in table 
-        is_threat = ip_response["threat"]["is_known_attacker"]
-            
         # drawing IP locality map
         # Append Lat and Lon values to empty list
-        geo_loc= []
-        geo_loc.append(ip_response.get("latitude"))
-        geo_loc.append(ip_response.get("longitude"))
-        geo_loc.append(ip_response.get("country_name"))
-        geo_loc.append(ip_response.get("city"))
+        geo_loc= [ip_response.get("latitude"),ip_response.get("longitude"),ip_response.get("country_name"),ip_response.get("city")]
+        # verify from nested dictionary, to be included in "is_Threat" column in table 
+        is_threat = ip_response["threat"]["is_known_attacker"]
         # 0 = Harmless , 1= Harmful
         if is_threat == 0:
             geo_loc.append("Harmless")
