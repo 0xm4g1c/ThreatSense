@@ -94,11 +94,13 @@ if datavisual_choice == "Compromised Credentials":
         if (re.search(regex,email_input)):
             email_is_suspicious=[email_details['email'],email_details['suspicious'],email_details['details']['credentials_leaked'],email_details['details']['malicious_activity'],email_details['details']['spam']]
             #draw a table with *email_is_suspicious* dataframe    
-            st.write(pd.DataFrame(email_is_suspicious, index=['Email','Suspicious','Leaked Credentials','Malicious', 'Spam'], columns=['Details']))
+            st.write(pd.DataFrame(email_is_suspicious, index=['Email','Suspicious','Credentials Leaked','Malicious', 'Spam'], columns=['Details']))
         elif 'fail' in email_details:
             st.error("Exceeded daily Limit. please wait 24 hrs or visit emailrep.io/key for an api key")
+        elif len(email_input) == 0:
+            pass
         else:
-            st.write("Invalid Email, Check Email Again")
+            st.error("Invalid Email, Check Email Again")
 
     if tools_choice == "IP":
         # IP API endpoint - http://api.cybercure.ai/feed/search?value=
@@ -106,11 +108,7 @@ if datavisual_choice == "Compromised Credentials":
         # Create an instance of an ipdata object. Replace "config.ip_api_key" with your API Key
         ipdata = ipdata.IPData(config.ip_api_key)
         ip_response = ipdata.lookup("{}".format(ip_input))
-        st.write("Look up information about a specific IP:link: address")
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
-
-        if st.checkbox("Show IP content(JSON):"):
-            st.write(ip_response) 
 
         # drawing IP locality map
         # Append Lat and Lon values to empty list
@@ -124,13 +122,11 @@ if datavisual_choice == "Compromised Credentials":
             geo_loc.append("Harmfull")
 
         # draw table with column names and values
-        ip_map = [{'latitude':geo_loc[0], 'longitude':geo_loc[1],'country':geo_loc[2], 'city':geo_loc[3], 'is_Threat':geo_loc[4]}]
-
-        # change list to dataframe
-        ip_values = pd.DataFrame(ip_map)
+        ip_map = [geo_loc[0], geo_loc[1], geo_loc[2], geo_loc[3], geo_loc[4]]
         st.success("A summary of  IP Address {}".format(ip_input))
-        st.dataframe(ip_values)
-
+        st.write(pd.DataFrame(ip_map, index=['Latitude','Longitude','Country','City', 'Threat'], columns=['Details']))
+        if st.checkbox("Show IP content(JSON):"):
+            st.write(ip_response)
         if st.checkbox("Show IP content(Map):"):
             st.pydeck_chart(pdk.Deck(
             map_style='mapbox://styles/mapbox/dark-v9',
@@ -160,7 +156,12 @@ if datavisual_choice == "Compromised Credentials":
                 ),
             ],
         ))
-
+        st.info((
+            """
+        **Please note**:
+        The point-based map is interactive, you can zoom with scrolling and hover on data points for additional information.
+        """
+        ))
     # recent scans
     
     if tools_choice == "URL":
@@ -172,12 +173,6 @@ if datavisual_choice == "Compromised Credentials":
         url_response = requests.get(url_endpoint, params=url_params)
         st.json(url_response.text)
 
-st.sidebar.info((
-    """
-**Please note**:
-The point-based map is interactive, you can zoom with scrolling and hover on data points for additional information.
-"""
-))
 
 st.sidebar.header("Contribute")
 st.sidebar.info(
