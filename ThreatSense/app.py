@@ -131,8 +131,8 @@ if datavisual_choice == "Compromised Credentials":
             st.pydeck_chart(pdk.Deck(
             map_style='mapbox://styles/mapbox/dark-v9',
             initial_view_state=pdk.ViewState(
-                latitude=ip_values.at[0,'latitude'],
-                longitude=ip_values.at[0,'longitude'],
+                latitude=ip_map[0],
+                longitude=ip_map[1],
                 zoom=11,
                 pitch=50,
             ),
