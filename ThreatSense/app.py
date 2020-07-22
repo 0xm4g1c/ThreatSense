@@ -39,6 +39,13 @@ if datavisual_choice =="File Upload":
         # modify file output to show: Hash value, file type, file name, submission period
         # load file output to a python object
         file_details = json.loads(file_response.text)
+        #scanned_engines = file_details.count("undetected")
+        #st.write(len(file_details['data']['attributes']['last_analysis_results']))
+        scanned_engines = file_details['data']['attributes']['last_analysis_results']
+        detected_engines = {}
+        
+
+        st.write(detected_engines)
         st.success("Basic Properties")
         # check 'error' key in Json output, if True, file is safe
         key = 'error'
