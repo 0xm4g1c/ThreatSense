@@ -6,6 +6,7 @@ import config
 import hashlib
 import json
 import re
+import plotly.graph_objects as go
 from PIL import Image
 from ipdata import ipdata
 from datetime import datetime, date
@@ -39,13 +40,32 @@ if datavisual_choice =="File Upload":
         # modify file output to show: Hash value, file type, file name, submission period
         # load file output to a python object
         file_details = json.loads(file_response.text)
-        #scanned_engines = file_details.count("undetected")
-        #st.write(len(file_details['data']['attributes']['last_analysis_results']))
         scanned_engines = file_details['data']['attributes']['last_analysis_results']
-        detected_engines = {}
+        # iterate through nested dictionary to count number of engines that detected, don't support and/or undetected
+        enumer_engines = []
+        for i in scanned_engines.keys():
+            for values in scanned_engines[i].values():
+                enumer_engines.append(values)
         
+        # number of detected, undetected engines, used in donut piechart
+        undetected= enumer_engines.count('undetected')
+        detected= enumer_engines.count('detected')
+        unsupported= enumer_engines.count('type-unsupported')
+        
+        # draw donut-shaped pie chart
+        labels = ['Detected threats', 'Undetected Threats', 'File scan Unsupported']
+        values = [detected, undetected,unsupported]
+        pie_figure = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.5)])
+        pie_figure.update_layout(
+            autosize=False,
+            width=500,
+            height=250
+        )
+        st.plotly_chart(pie_figure)
+        # draw a stackad horizontal bar with text below
+        st.write(f'{undetected} / {len(scanned_engines)} engines scanned did not detect any threats')
 
-        st.write(detected_engines)
+
         st.success("Basic Properties")
         # check 'error' key in Json output, if True, file is safe
         key = 'error'
@@ -116,7 +136,6 @@ if datavisual_choice == "Compromised Credentials":
         ipdata = ipdata.IPData(config.ip_api_key)
         ip_response = ipdata.lookup("{}".format(ip_input))
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
-
         # drawing IP locality map
         # Append Lat and Lon values to empty list
         geo_loc= [ip_response.get("latitude"),ip_response.get("longitude"),ip_response.get("country_name"),ip_response.get("city")]
@@ -132,21 +151,24 @@ if datavisual_choice == "Compromised Credentials":
         ip_map = [geo_loc[0], geo_loc[1], geo_loc[2], geo_loc[3], geo_loc[4]]
         st.success("A summary of  IP Address {}".format(ip_input))
         st.write(pd.DataFrame(ip_map, index=['Latitude','Longitude','Country','City', 'Threat'], columns=['Details']))
+    
         if st.checkbox("Show IP content(JSON):"):
             st.write(ip_response)
+        # change above list to dataframe for web viewing
+        ip_geo_values = pd.DataFrame(ip_map)
         if st.checkbox("Show IP content(Map):"):
             st.pydeck_chart(pdk.Deck(
             map_style='mapbox://styles/mapbox/dark-v9',
             initial_view_state=pdk.ViewState(
-                latitude=ip_map[0],
-                longitude=ip_map[1],
+                latitude=ip_geo_values.at[0,0],
+                longitude=ip_geo_values.at[1,0],
                 zoom=11,
                 pitch=50,
             ),
             layers=[
                 pdk.Layer(
                     'HexagonLayer',
-                    data=ip_map,
+                    data=ip_geo_values,
                     get_position='[longitude, latitude]',
                     radius=200,
                     elevation_scale=4,
@@ -156,7 +178,7 @@ if datavisual_choice == "Compromised Credentials":
                 ),
                 pdk.Layer(
                     'ScatterplotLayer',
-                    data=ip_map,
+                    data=ip_geo_values,
                     get_position='[longitude, latitude]',
                     get_fill_color='[60, 220,255]',
                     get_radius=200,
