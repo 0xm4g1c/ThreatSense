@@ -19,11 +19,15 @@ datavisual_choice = st.sidebar.radio("Navigate Pages",
 
 # welcome page
 if datavisual_choice == "Home Page":
-    st.header("**An Open-Source Attack Surface Management Framework**")
-    st.subheader("**Find Technical Information About Internet Assets**")
+    st.header("**Vulnerability Scanner for everyone**")
+    st.subheader("Find technical information about internet assets before **_HACKERS_** do")
     # home page promotional video
-    src = "https://www.youtube.com/watch?v=wzsSkcgtDWo"
-    st.video(src, start_time=0) 
+    #src = "https://www.youtube.com/watch?v=wzsSkcgtDWo"
+    #st.video(src, start_time=0) 
+
+    st.markdown(f"<center> Core features </center", unsafe_allow_html=True)
+    image_hiw = Image.open('hiw2.jpg')
+    st.image(image_hiw, use_column_width=True)
 
 # File upload
 if datavisual_choice =="File Upload":
@@ -39,39 +43,23 @@ if datavisual_choice =="File Upload":
         file_response = requests.get(file_endpoint, headers=file_headers)
         # modify file output to show: Hash value, file type, file name, submission period
         # load file output to a python object
-        file_details = json.loads(file_response.text)
-        scanned_engines = file_details['data']['attributes']['last_analysis_results']
-        # iterate through nested dictionary to count number of engines that detected, don't support and/or undetected
-        enumer_engines = []
-        for i in scanned_engines.keys():
-            for values in scanned_engines[i].values():
-                enumer_engines.append(values)
-        
-        # number of detected, undetected engines, used in donut piechart
-        undetected= enumer_engines.count('undetected')
-        detected= enumer_engines.count('detected')
-        unsupported= enumer_engines.count('type-unsupported')
-        
-        # draw donut-shaped pie chart
-        labels = ['Detected threats', 'Undetected Threats', 'File scan Unsupported']
-        values = [detected, undetected,unsupported]
-        pie_figure = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.5)])
-        pie_figure.update_layout(
-            autosize=False,
-            width=500,
-            height=250
-        )
-        st.plotly_chart(pie_figure)
-        # draw a stackad horizontal bar with text below
-        st.write(f'{undetected} / {len(scanned_engines)} engines scanned did not detect any threats')
+        file_details = json.loads(file_response.text)       
 
-
-        st.success("Basic Properties")
         # check 'error' key in Json output, if True, file is safe
         key = 'error'
         if key in file_details:
-            file_is_not_suspicious=[uploaded_file_hash,'Safe']
+            safe_labels = ['Unknown File']
+            safe_values = [100]
+            safe_pie_figure= go.Figure(data=[go.Pie(labels=safe_labels,values=safe_values,hole=.4)])
+            safe_pie_figure.update_layout(
+                autosize=False,
+                width=500,
+                height=250
+            )
+            st.plotly_chart(safe_pie_figure)
+            file_is_not_suspicious=[uploaded_file_hash,'Unknown File']
             st.write(pd.DataFrame(file_is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
+        
         else:
             # lists to hold file details
             file_is_suspicious=[file_details['data']['attributes']['meaningful_name'],file_details['data']['attributes']['md5'],file_details['data']['attributes']['magic'],file_details['data']['attributes']['size']]
@@ -80,6 +68,41 @@ if datavisual_choice =="File Upload":
             else:
                 file_is_suspicious.append("Harmful")
 
+            scanned_engines = file_details['data']['attributes']['last_analysis_results']
+            # iterate through nested dictionary to count number of engines that detected, don't support and/or undetected
+            enumer_engines = []
+            for i in scanned_engines.keys():
+                for values in scanned_engines[i].values():
+                    enumer_engines.append(values)
+            
+            # number of detected, undetected engines, used in donut piechart
+            undetected= enumer_engines.count('undetected')
+            detected= enumer_engines.count('detected')
+            unsupported= enumer_engines.count('type-unsupported')
+            
+            # draw donut-shaped pie chart
+            suspicious_labels = ['Detected threats', 'Undetected Threats', 'File scan Unsupported']
+            suspicious_values = [detected, undetected,unsupported]
+            suspicious_pie_figure = go.Figure(data=[go.Pie(labels=suspicious_labels, values=suspicious_values, hole=.5)])
+            suspicious_pie_figure.update_layout(
+                autosize=False,
+                width=500,
+                height=250
+            )
+            st.plotly_chart(suspicious_pie_figure)
+
+            # draw a stackad horizontal bar with text
+            st.markdown(f'''
+                <div class="card text-white bg-info mb-3"  style="width: 28rem", centered>
+                    <div class="card-header">
+                        File Severity
+                    </div>
+                    <div class='card-body'>
+                        <p class="card-text">{undetected} / {len(scanned_engines)} scanned engines did not detect any threats</p>
+                    </div>
+                </div>''', unsafe_allow_html=True)
+            
+            st.success("Basic Properties")
             # draw table with column names and valuesf
             st.write(pd.DataFrame(file_is_suspicious, index=['File Name', 'File Hash', 'File Type', 'File Size', 'File Status'], columns=['Details']))
 
