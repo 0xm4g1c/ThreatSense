@@ -152,6 +152,7 @@ if datavisual_choice == "Compromised Credentials":
         else:
             st.error("Invalid Email, Check Email Again")
 
+
     if tools_choice == "IP":
         # IP API endpoint - http://api.cybercure.ai/feed/search?value=
         ip_input = st.text_input('Input IP Address',)
@@ -159,8 +160,7 @@ if datavisual_choice == "Compromised Credentials":
         ipdata = ipdata.IPData(config.ip_api_key)
         ip_response = ipdata.lookup("{}".format(ip_input))
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
-        # drawing IP locality map
-        # Append Lat and Lon values to empty list
+        # drawing IP locality map. Append Lat and Lon values to empty list
         geo_loc= [ip_response.get("latitude"),ip_response.get("longitude"),ip_response.get("country_name"),ip_response.get("city")]
         # verify from nested dictionary, to be included in "is_Threat" column in table 
         is_threat = ip_response["threat"]["is_known_attacker"]
