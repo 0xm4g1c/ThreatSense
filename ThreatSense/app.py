@@ -7,6 +7,8 @@ import hashlib
 import json
 import re
 import plotly.graph_objects as go
+import data_visualization as dv
+from contextlib import suppress
 from PIL import Image
 from ipdata import ipdata
 from datetime import datetime, date
@@ -31,7 +33,6 @@ if datavisual_choice == "Home Page":
 
 # File upload
 if datavisual_choice =="File Upload":
-    # Caching -  reduce load time 
     uploaded_file = st.file_uploader("Choose a file to scan..")    
     if uploaded_file is not None:
         # getting hash value of uploaded file
@@ -41,85 +42,71 @@ if datavisual_choice =="File Upload":
         file_endpoint = "https://www.virustotal.com/api/v3/files/" +  uploaded_file_hash
         file_headers = {'x-apikey': config.file_api_key}
         file_response = requests.get(file_endpoint, headers=file_headers)
-        # modify file output to show: Hash value, file type, file name, submission period
         # load file output to a python object
-        file_details = json.loads(file_response.text)       
+        file_details = json.loads(file_response.text)   
 
-        # check 'error' key in Json output, if True, file is safe
-        key = 'error'
-        if key in file_details:
-            safe_labels = ['Unknown File']
-            safe_values = [100]
-            safe_pie_figure= go.Figure(data=[go.Pie(labels=safe_labels,values=safe_values,hole=.4)])
-            safe_pie_figure.update_layout(
-                autosize=False,
-                width=500,
-                height=250
-            )
-            st.plotly_chart(safe_pie_figure)
-            file_is_not_suspicious=[uploaded_file_hash,'Unknown File']
-            st.write(pd.DataFrame(file_is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
-        
-        else:
-            # lists to hold file details
-            file_is_suspicious=[file_details['data']['attributes']['meaningful_name'],file_details['data']['attributes']['md5'],file_details['data']['attributes']['magic'],file_details['data']['attributes']['size']]
-            if file_details['data']['attributes']['total_votes']['malicious'] == 0:
-                file_is_suspicious.append("Harmless") 
+        # ignore Exceptions being outputted to user.    
+        with suppress (KeyError):
+            # check 'error' key in Json output, if True, file hasnt been submitted to any engines yet
+            if 'error' in file_details:
+                # call function from data_visualization module
+                dv.draw_pie(labels=['Unknown File'], values=[100])
+                file_is_not_suspicious=[uploaded_file_hash,'Unknown File']
+                st.write(pd.DataFrame(file_is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
+            
             else:
-                file_is_suspicious.append("Harmful")
+                # lists to hold file details
+                file_is_suspicious=[file_details['data']['attributes']['meaningful_name'],file_details['data']['attributes']['md5'],file_details['data']['attributes']['magic'],file_details['data']['attributes']['size']]
+                if file_details['data']['attributes']['total_votes']['malicious'] == 0:
+                    file_is_suspicious.append("Harmless") 
+                else:
+                    file_is_suspicious.append("Harmfull")
 
-            scanned_engines = file_details['data']['attributes']['last_analysis_results']
-            # iterate through nested dictionary to count number of engines that detected, don't support and/or undetected
-            enumer_engines = []
-            for i in scanned_engines.keys():
-                for values in scanned_engines[i].values():
-                    enumer_engines.append(values)
-            
-            # number of detected, undetected engines, used in donut piechart
-            undetected= enumer_engines.count('undetected')
-            detected= enumer_engines.count('detected')
-            unsupported= enumer_engines.count('type-unsupported')
-            
-            # draw donut-shaped pie chart
-            suspicious_labels = ['Detected threats', 'Undetected Threats', 'File scan Unsupported']
-            suspicious_values = [detected, undetected,unsupported]
-            suspicious_pie_figure = go.Figure(data=[go.Pie(labels=suspicious_labels, values=suspicious_values, hole=.5)])
-            suspicious_pie_figure.update_layout(
-                autosize=False,
-                width=500,
-                height=250
-            )
-            st.plotly_chart(suspicious_pie_figure)
+                scanned_engines = file_details['data']['attributes']['last_analysis_results']
+                # iterate through nested dictionary to count number of engines that detected, don't support and/or undetected
+                enumer_engines = []
+                for i in scanned_engines.keys():
+                    for values in scanned_engines[i].values():
+                        enumer_engines.append(values)
+                
+                # number of detected, undetected engines, used in donut piechart
+                undetected= enumer_engines.count('undetected')
+                detected= enumer_engines.count('detected')
+                unsupported= enumer_engines.count('type-unsupported')
+                
+                # draw donut-shaped pie chart        
+                dv.draw_pie(labels=['Detected threats', 'Undetected Threats', 'File scan Unsupported'],
+                        values=[detected, undetected,unsupported])
 
-            # draw a stackad horizontal bar with text
-            st.markdown(f'''
-                <div class="card text-white bg-info mb-3"  style="width: 28rem", centered>
-                    <div class="card-header">
-                        File Severity
-                    </div>
-                    <div class='card-body'>
-                        <p class="card-text">{undetected} / {len(scanned_engines)} scanned engines did not detect any threats</p>
-                    </div>
-                </div>''', unsafe_allow_html=True)
-            
-            st.success("Basic Properties")
-            # draw table with column names and valuesf
-            st.write(pd.DataFrame(file_is_suspicious, index=['File Name', 'File Hash', 'File Type', 'File Size', 'File Status'], columns=['Details']))
+                # draw a stackad horizontal bar with text
+                st.markdown(f'''
+                    <div class="card text-white bg-info mb-3"  style="width: 28rem", centered>
+                        <div class="card-header">
+                            File Severity
+                        </div>
+                        <div class='card-body'>
+                            <p class="card-text">{detected} / {len(scanned_engines)} scanned engines detected no threats</p>
+                        </div>
+                    </div>''', unsafe_allow_html=True)
+                
+                st.success("Basic Properties")
+                # draw table with column names and valuesf
+                st.write(pd.DataFrame(file_is_suspicious, index=['File Name', 'File Hash', 'File Type', 'File Size', 'File Status'], columns=['Details']))
 
-            st.success("Submission History")
-            # Timestamps in file details is in Epoch time, seconds elapsed since 1/1/1997. 
-            epoch_timestamp = [
-                (file_details['data']['attributes']['creation_date']),
-                (file_details['data']['attributes']['first_submission_date']),
-                (file_details['data']['attributes']['last_analysis_date']),            
-            ]
-            # convert epoch - normal time
-            normal_timestamp = []
-            for i in epoch_timestamp:
-                normal_timestamp.append(datetime.fromtimestamp(i))
+                st.success("Submission History")
+                # Timestamps in file details is in Epoch time, seconds elapsed since 1/1/1997. 
+                epoch_timestamp = [
+                    (file_details['data']['attributes']['creation_date']),
+                    (file_details['data']['attributes']['first_submission_date']),
+                    (file_details['data']['attributes']['last_analysis_date']),            
+                ]
+                # convert epoch - normal time
+                normal_timestamp = []
+                for i in epoch_timestamp:
+                    normal_timestamp.append(datetime.fromtimestamp(i))
 
-            pd.set_option('display.expand_frame_repr', True)
-            st.write(pd.DataFrame(normal_timestamp, index=['Creation Date','Submission Date','Last Analysis Date'], columns=['Dates']))
+                pd.set_option('display.expand_frame_repr', True)
+                st.write(pd.DataFrame(normal_timestamp, index=['Creation Date','Submission Date','Last Analysis Date'], columns=['Dates']))
 
 
 
@@ -154,11 +141,12 @@ if datavisual_choice == "Compromised Credentials":
 
 
     if tools_choice == "IP":
+        #with suppress (ValueError):
         # IP API endpoint - http://api.cybercure.ai/feed/search?value=
         ip_input = st.text_input('Input IP Address',)
         # Create an instance of an ipdata object. Replace "config.ip_api_key" with your API Key
         ipdata = ipdata.IPData(config.ip_api_key)
-        ip_response = ipdata.lookup("{}".format(ip_input))
+        ip_response = ipdata.lookup("{}".format(ip_input.lstrip()))
         st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
         # drawing IP locality map. Append Lat and Lon values to empty list
         geo_loc= [ip_response.get("latitude"),ip_response.get("longitude"),ip_response.get("country_name"),ip_response.get("city")]
