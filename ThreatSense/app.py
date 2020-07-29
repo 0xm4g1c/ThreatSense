@@ -50,7 +50,7 @@ if datavisual_choice =="File Upload":
             # check 'error' key in Json output, if True, file hasnt been submitted to any engines yet
             if 'error' in file_details:
                 # call function from data_visualization module
-                dv.draw_pie(labels=['Unknown File'], values=[100])
+                dv.draw_pie(labels=['Unknown File'], values=[100], colors = ['green'])
                 file_is_not_suspicious=[uploaded_file_hash,'Unknown File']
                 st.write(pd.DataFrame(file_is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
             
@@ -76,11 +76,11 @@ if datavisual_choice =="File Upload":
                 
                 # draw donut-shaped pie chart        
                 dv.draw_pie(labels=['Detected threats', 'Undetected Threats', 'File scan Unsupported'],
-                        values=[detected, undetected,unsupported])
+                        values=[detected, undetected,unsupported], colors = ['red', 'green', 'white'])
 
                 # draw a stackad horizontal bar with text
                 st.markdown(f'''
-                    <div class="card text-white bg-info mb-3"  style="width: 28rem", centered>
+                    <div class="card text-black bg-light mb-3"  style="width: 43.5rem; height:6rem; font-size:13px">
                         <div class="card-header">
                             File Severity
                         </div>
@@ -89,11 +89,11 @@ if datavisual_choice =="File Upload":
                         </div>
                     </div>''', unsafe_allow_html=True)
                 
-                st.success("Basic Properties")
+                st.info("Basic Properties")
                 # draw table with column names and valuesf
                 st.write(pd.DataFrame(file_is_suspicious, index=['File Name', 'File Hash', 'File Type', 'File Size', 'File Status'], columns=['Details']))
 
-                st.success("Submission History")
+                st.info("Submission History")
                 # Timestamps in file details is in Epoch time, seconds elapsed since 1/1/1997. 
                 epoch_timestamp = [
                     (file_details['data']['attributes']['creation_date']),
@@ -104,8 +104,7 @@ if datavisual_choice =="File Upload":
                 normal_timestamp = []
                 for i in epoch_timestamp:
                     normal_timestamp.append(datetime.fromtimestamp(i))
-
-                pd.set_option('display.expand_frame_repr', True)
+                
                 st.write(pd.DataFrame(normal_timestamp, index=['Creation Date','Submission Date','Last Analysis Date'], columns=['Dates']))
 
 
@@ -125,19 +124,22 @@ if datavisual_choice == "Compromised Credentials":
         email_status = "".join(email_query)
         email_response = requests.get('{}'.format(email_status))
         email_details =json.loads(email_response.text)
+        #st.write(email_details)
         # access values from *emails_details* JSON object
         # validate email input
-        regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
-        if (re.search(regex,email_input)):
-            email_is_suspicious=[email_details['email'],email_details['suspicious'],email_details['details']['credentials_leaked'],email_details['details']['malicious_activity'],email_details['details']['spam']]
-            #draw a table with *email_is_suspicious* dataframe    
-            st.write(pd.DataFrame(email_is_suspicious, index=['Email','Suspicious','Credentials Leaked','Malicious', 'Spam'], columns=['Details']))
-        elif 'fail' in email_details:
+        regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'        
+        if 'status' in email_details:
             st.error("Exceeded daily Limit. please wait 24 hrs or visit emailrep.io/key for an api key")
         elif len(email_input) == 0:
             pass
+        elif (re.search(regex,email_input)):
+            email_is_suspicious=[email_details['email'],email_details['details']['blacklisted'],email_details['suspicious'],email_details['details']['credentials_leaked'],email_details['details']['malicious_activity'],email_details['details']['spam']]
+            #draw a table with *email_is_suspicious* dataframe    
+            
+            pd.set_option('max_colwidth', 800)
+            st.write(pd.DataFrame(email_is_suspicious, index=['Email','Blacklisted','Suspicious','Credentials Leaked','Malicious', 'Spam'], columns=['Details']))
         else:
-            st.error("Invalid Email, Check Email Again")
+            st.error("Invalid Email, Check Email Address again")
 
 
     if tools_choice == "IP":
@@ -152,50 +154,50 @@ if datavisual_choice == "Compromised Credentials":
         geo_loc= [ip_response.get("latitude"),ip_response.get("longitude"),ip_response.get("country_name"),ip_response.get("city")]
         # verify from nested dictionary, to be included in "is_Threat" column in table 
         is_threat = ip_response["threat"]["is_known_attacker"]
-        # 0 = Harmless , 1= Harmful
-        if is_threat == 0:
-            geo_loc.append("Harmless")
-        else:
-            geo_loc.append("Harmfull")
+        # 0 = Harmless , 1= Harmful        
+        geo_loc.append("Harmless") if is_threat == 0 else geo_loc.append("Harmfull")
+            
 
         # draw table with column names and values
         ip_map = [geo_loc[0], geo_loc[1], geo_loc[2], geo_loc[3], geo_loc[4]]
         st.success("A summary of  IP Address {}".format(ip_input))
-        st.write(pd.DataFrame(ip_map, index=['Latitude','Longitude','Country','City', 'Threat'], columns=['Details']))
-    
-        if st.checkbox("Show IP content(JSON):"):
-            st.write(ip_response)
+        if len(ip_input) < 2:
+            pass
+        else:
+            st.write(pd.DataFrame(ip_map, index=['Latitude','Longitude','Country','City', 'Threat'], columns=['Details']))
+        
+        # st.write(ip_response)
         # change above list to dataframe for web viewing
         ip_geo_values = pd.DataFrame(ip_map)
-        if st.checkbox("Show IP content(Map):"):
-            st.pydeck_chart(pdk.Deck(
-            map_style='mapbox://styles/mapbox/dark-v9',
-            initial_view_state=pdk.ViewState(
-                latitude=ip_geo_values.at[0,0],
-                longitude=ip_geo_values.at[1,0],
-                zoom=11,
-                pitch=50,
+        
+        st.pydeck_chart(pdk.Deck(
+        map_style='mapbox://styles/mapbox/dark-v9',
+        initial_view_state=pdk.ViewState(
+            latitude=ip_geo_values.at[0,0],
+            longitude=ip_geo_values.at[1,0],
+            zoom=11,
+            pitch=50,
+        ),
+        layers=[
+            pdk.Layer(
+                'HexagonLayer',
+                data=ip_geo_values,
+                get_position='[longitude, latitude]',
+                radius=200,
+                elevation_scale=4,
+                elevation_range=[0, 1000],
+                pickable=True,
+                extruded=True,
             ),
-            layers=[
-                pdk.Layer(
-                    'HexagonLayer',
-                    data=ip_geo_values,
-                    get_position='[longitude, latitude]',
-                    radius=200,
-                    elevation_scale=4,
-                    elevation_range=[0, 1000],
-                    pickable=True,
-                    extruded=True,
-                ),
-                pdk.Layer(
-                    'ScatterplotLayer',
-                    data=ip_geo_values,
-                    get_position='[longitude, latitude]',
-                    get_fill_color='[60, 220,255]',
-                    get_radius=200,
-                ),
-            ],
-        ))
+            pdk.Layer(
+                'ScatterplotLayer',
+                data=ip_geo_values,
+                get_position='[longitude, latitude]',
+                get_fill_color='[60, 220,255]',
+                get_radius=200,
+            ),
+        ],
+    ))
         st.info((
             """
         **Please note**:
