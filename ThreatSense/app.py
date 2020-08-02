@@ -5,7 +5,7 @@ import pydeck as pdk
 import config
 import hashlib
 import json
-import re
+import re, validators
 import plotly.graph_objects as go
 import data_visualization as dv
 from contextlib import suppress
@@ -51,43 +51,34 @@ if datavisual_choice =="File Upload":
             if 'error' in file_details:
                 # call function from data_visualization module
                 dv.draw_pie(labels=['Unknown File'], values=[100], colors = ['green'])
-                file_is_not_suspicious=[uploaded_file_hash,'Unknown File']
+                file_is_not_suspicious=[uploaded_file_hash,'No threat']
                 st.write(pd.DataFrame(file_is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
             
             else:
                 # lists to hold file details
                 file_is_suspicious=[file_details['data']['attributes']['meaningful_name'],file_details['data']['attributes']['md5'],file_details['data']['attributes']['magic'],file_details['data']['attributes']['size']]
                 if file_details['data']['attributes']['total_votes']['malicious'] == 0:
-                    file_is_suspicious.append("Harmless") 
+                    file_is_suspicious.append("No Threat Detected") 
                 else:
-                    file_is_suspicious.append("Harmfull")
+                    file_is_suspicious.append("Threat Detected")
 
-                scanned_engines = file_details['data']['attributes']['last_analysis_results']
+                scanned_file_engines = file_details['data']['attributes']['last_analysis_results']
                 # iterate through nested dictionary to count number of engines that detected, don't support and/or undetected
-                enumer_engines = []
-                for i in scanned_engines.keys():
-                    for values in scanned_engines[i].values():
-                        enumer_engines.append(values)
+                enumer_file_engines = []
+                for i in scanned_file_engines.keys():
+                    for values in scanned_file_engines[i].values():
+                        enumer_file_engines.append(values)
                 
                 # number of detected, undetected engines, used in donut piechart
-                undetected= enumer_engines.count('undetected')
-                detected= enumer_engines.count('detected')
-                unsupported= enumer_engines.count('type-unsupported')
+                undetected= enumer_file_engines.count('undetected')
+                detected= enumer_file_engines.count('detected')
+                unsupported= enumer_file_engines.count('type-unsupported')
                 
                 # draw donut-shaped pie chart        
                 dv.draw_pie(labels=['Detected threats', 'Undetected Threats', 'File scan Unsupported'],
                         values=[detected, undetected,unsupported], colors = ['red', 'green', 'white'])
-
                 # draw a stackad horizontal bar with text
-                st.markdown(f'''
-                    <div class="card text-black bg-light mb-3"  style="width: 43.5rem; height:6rem; font-size:13px">
-                        <div class="card-header">
-                            File Severity
-                        </div>
-                        <div class='card-body'>
-                            <p class="card-text">{detected} / {len(scanned_engines)} scanned engines detected no threats</p>
-                        </div>
-                    </div>''', unsafe_allow_html=True)
+                dv.draw_stacked_bar(detected=detected, scanned_engines= undetected + detected)
                 
                 st.info("Basic Properties")
                 # draw table with column names and valuesf
@@ -127,12 +118,12 @@ if datavisual_choice == "Compromised Credentials":
         #st.write(email_details)
         # access values from *emails_details* JSON object
         # validate email input
-        regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'        
+        email_regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'        
         if 'status' in email_details:
             st.error("Exceeded daily Limit. please wait 24 hrs or visit emailrep.io/key for an api key")
         elif len(email_input) == 0:
             pass
-        elif (re.search(regex,email_input)):
+        elif (re.search(email_regex,email_input)):
             email_is_suspicious=[email_details['email'],email_details['details']['blacklisted'],email_details['suspicious'],email_details['details']['credentials_leaked'],email_details['details']['malicious_activity'],email_details['details']['spam']]
             #draw a table with *email_is_suspicious* dataframe    
             
@@ -142,79 +133,88 @@ if datavisual_choice == "Compromised Credentials":
             st.error("Invalid Email, Check Email Address again")
 
 
-    if tools_choice == "IP":
-        #with suppress (ValueError):
+    if tools_choice == "IP":        
         # IP API endpoint - http://api.cybercure.ai/feed/search?value=
-        ip_input = st.text_input('Input IP Address',)
-        # Create an instance of an ipdata object. Replace "config.ip_api_key" with your API Key
-        ipdata = ipdata.IPData(config.ip_api_key)
-        ip_response = ipdata.lookup("{}".format(ip_input.lstrip()))
-        st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
-        # drawing IP locality map. Append Lat and Lon values to empty list
-        geo_loc= [ip_response.get("latitude"),ip_response.get("longitude"),ip_response.get("country_name"),ip_response.get("city")]
-        # verify from nested dictionary, to be included in "is_Threat" column in table 
-        is_threat = ip_response["threat"]["is_known_attacker"]
-        # 0 = Harmless , 1= Harmful        
-        geo_loc.append("Harmless") if is_threat == 0 else geo_loc.append("Harmfull")
+        try:
+            ip_input = st.text_input('Input IP Address',)
+            # Create an instance of an ipdata object. Replace "config.ip_api_key" with your API Key
+            ipdata = ipdata.IPData(config.ip_api_key)
+            ip_response = ipdata.lookup("{}".format(ip_input.lstrip()))
+            st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
+            # drawing IP locality map. Append Lat and Lon values to empty list
+            geo_loc= [ip_response.get("latitude"),ip_response.get("longitude"),ip_response.get("country_name"),ip_response.get("city")]
+            # verify from nested dictionary, to be included in "is_Threat" column in table 
+            is_threat = ip_response["threat"]["is_known_attacker"]
+            # 0 = Harmless , 1= Harmful        
+            if is_threat == 0:
+                geo_loc.append("No Threat Detected")
+            else:
+                geo_loc.append("Threat Detected")
+                
+            # draw table with column names and values
+            ip_map = [geo_loc[0], geo_loc[1], geo_loc[2], geo_loc[3], geo_loc[4]]  
+            if len(ip_input) == 0:
+                pass 
+            else:         
+                st.success("Summary of IP Address: {}".format(ip_input))
+                st.write(pd.DataFrame(ip_map, index=['Latitude','Longitude','Country','City', 'Threat Status'], columns=['Details']))
             
-
-        # draw table with column names and values
-        ip_map = [geo_loc[0], geo_loc[1], geo_loc[2], geo_loc[3], geo_loc[4]]
-        st.success("A summary of  IP Address {}".format(ip_input))
-        if len(ip_input) < 2:
-            pass
-        else:
-            st.write(pd.DataFrame(ip_map, index=['Latitude','Longitude','Country','City', 'Threat'], columns=['Details']))
-        
-        # st.write(ip_response)
-        # change above list to dataframe for web viewing
-        ip_geo_values = pd.DataFrame(ip_map)
-        
-        st.pydeck_chart(pdk.Deck(
-        map_style='mapbox://styles/mapbox/dark-v9',
-        initial_view_state=pdk.ViewState(
-            latitude=ip_geo_values.at[0,0],
-            longitude=ip_geo_values.at[1,0],
-            zoom=11,
-            pitch=50,
-        ),
-        layers=[
-            pdk.Layer(
-                'HexagonLayer',
-                data=ip_geo_values,
-                get_position='[longitude, latitude]',
-                radius=200,
-                elevation_scale=4,
-                elevation_range=[0, 1000],
-                pickable=True,
-                extruded=True,
-            ),
-            pdk.Layer(
-                'ScatterplotLayer',
-                data=ip_geo_values,
-                get_position='[longitude, latitude]',
-                get_fill_color='[60, 220,255]',
-                get_radius=200,
-            ),
-        ],
-    ))
-        st.info((
-            """
-        **Please note**:
-        The point-based map is interactive, you can zoom with scrolling and hover on data points for additional information.
-        """
-        ))
-    # recent scans
+                # st.write(ip_response)
+                # change above list to dataframe for web viewing
+                ip_geo_values = pd.DataFrame(ip_map)
+                st.info(("""**Please note**:The point-based map is interactive, you can zoom with scrolling and hover on data points."""))
+                
+                st.pydeck_chart(pdk.Deck(
+                map_style='mapbox://styles/mapbox/dark-v9',
+                initial_view_state=pdk.ViewState(
+                    latitude=ip_geo_values.at[0,0],
+                    longitude=ip_geo_values.at[1,0],
+                    zoom=11,
+                    pitch=50,
+                ),
+                layers=[
+                    pdk.Layer(
+                        'HexagonLayer',
+                        data=ip_geo_values,
+                        get_position='[longitude, latitude]',
+                        radius=200,
+                        elevation_scale=4,
+                        elevation_range=[0, 1000],
+                        pickable=True,
+                        extruded=True,
+                    ),
+                    pdk.Layer(
+                        'ScatterplotLayer',
+                        data=ip_geo_values,
+                        get_position='[longitude, latitude]',
+                        get_fill_color='[60, 220,255]',
+                        get_radius=200,
+                    ),
+                ],
+            ))
+        except ValueError:
+            st.error(f"{ip_input}, Is an invalid IP address")
     
     if tools_choice == "URL":
-        # URL API endpoint
-        url_endpoint = 'https://www.virustotal.com/vtapi/v2/url/report'
-        url_input = st.text_input('Input URL',)
-        #Replace `test` with your API Key
-        url_params = {'apikey': config.url_api_key, 'resource':url_input}
-        url_response = requests.get(url_endpoint, params=url_params)
-        st.json(url_response.text)
-
+        try:
+            # URL API endpoint
+            url_endpoint = 'https://www.virustotal.com/vtapi/v2/url/report'
+            url_input = st.text_input('Input URL',)
+            #Replace `test` with your API Key
+            url_params = {'apikey': config.url_api_key, 'resource':url_input}
+            url_response = requests.get(url_endpoint, params=url_params)
+            #st.json(url_response.text) 
+            url_details = json.loads(url_response.text)  
+            scanned_url_engines = [url_details['scan_id'],url_details['url'],url_details['scan_date']]
+            # validate URL input
+            valid_url = validators.url(url_input)
+            if valid_url==True:
+                #visual components
+                dv.draw_pie(labels=['Threats', 'No Threats'], values=[url_details['positives'],url_details['total']], colors=['red','green'])
+                dv.draw_stacked_bar(detected=url_details['positives'], scanned_engines=url_details['total'])
+                st.write(pd.DataFrame(scanned_url_engines, index=['Scan ID','URL Resource','Scan Date'], columns=['Details']))
+        except:
+            st.error("Sorry! Invalid URL or URL does not exist in scanned engine's databases")
 
 st.sidebar.header("Contribute")
 st.sidebar.info(
