@@ -31,3 +31,13 @@ def draw_stacked_bar(detected, scanned_engines):
                         </div>
                     </div>''', unsafe_allow_html=True)
 
+
+# Future Work, subsequent releases.
+# navigation
+def draw_tabs():
+    return st.markdown(f'''
+                     <ul class="nav nav-pills">
+                        <li class="active"><a href="#">Basic Properties</a></li>
+                        <li><a href= "#">Submission History</a></li>
+                    </ul>''', 
+                    unsafe_allow_html=True)

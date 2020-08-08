@@ -69,7 +69,7 @@ if datavisual_choice =="File Upload":
                     for values in scanned_file_engines[i].values():
                         enumer_file_engines.append(values)
                 
-                # number of detected, undetected engines, used in donut piechart
+                # number of detected, undetected and unsupported engines, used in donut piechart
                 undetected= enumer_file_engines.count('undetected')
                 detected= enumer_file_engines.count('detected')
                 unsupported= enumer_file_engines.count('type-unsupported')
@@ -78,7 +78,7 @@ if datavisual_choice =="File Upload":
                 dv.draw_pie(labels=['Detected threats', 'Undetected Threats', 'File scan Unsupported'],
                         values=[detected, undetected,unsupported], colors = ['red', 'green', 'white'])
                 # draw a stackad horizontal bar with text
-                dv.draw_stacked_bar(detected=detected, scanned_engines= undetected + detected)
+                dv.draw_stacked_bar(detected=detected, scanned_engines= undetected+detected+unsupported)
                 
                 st.info("Basic Properties")
                 # draw table with column names and valuesf
