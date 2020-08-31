@@ -8,8 +8,8 @@ import json
 import re, validators
 import plotly.graph_objects as go
 import data_visualization as dv
+from requests.exceptions import ConnectionError
 from contextlib import suppress
-from PIL import Image
 from ipdata import ipdata
 from datetime import datetime, date
 
@@ -22,36 +22,33 @@ datavisual_choice = st.sidebar.radio("Navigate Pages",
 # welcome page
 if datavisual_choice == "Home Page":
     st.header("**Vulnerability Scanner for everyone**")
-    st.subheader("Find technical information about internet assets before **_HACKERS_** do")
-    # home page promotional video
-    #src = "https://www.youtube.com/watch?v=wzsSkcgtDWo"
-    #st.video(src, start_time=0) 
-
-    st.markdown(f"<center> Core features </center", unsafe_allow_html=True)
-    image_hiw = Image.open('hiw2.jpg')
-    st.image(image_hiw, use_column_width=True)
-
+    st.write(" ### Find technical information about internet assets before **_HACKERS_** do")
+    dv.threatmap()
+    
 # File upload
+st.set_option('deprecation.showfileUploaderEncoding', False)
 if datavisual_choice =="File Upload":
-    uploaded_file = st.file_uploader("Choose a file to scan..")    
-    if uploaded_file is not None:
-        # getting hash value of uploaded file
-        bytes = uploaded_file.read()
-        uploaded_file_hash = hashlib.md5(bytes).hexdigest()
-        # add hash to endpoint
-        file_endpoint = "https://www.virustotal.com/api/v3/files/" +  uploaded_file_hash
-        file_headers = {'x-apikey': config.file_api_key}
-        file_response = requests.get(file_endpoint, headers=file_headers)
-        # load file output to a python object
-        file_details = json.loads(file_response.text)   
+    st.write("### Scan files for known threats")
+    dv.svg_assets(image="Assets/my_files.svg")
+    try:
+        uploaded_file = st.file_uploader("Choose a file to scan..")    
+        if uploaded_file is not None:
+            # getting hash value of uploaded file
+            bytes = uploaded_file.read()
+            uploaded_file_hash = hashlib.md5(bytes).hexdigest()
+            # add hash to endpoint
+            file_endpoint = "https://www.virustotal.com/api/v3/files/" +  uploaded_file_hash
+            file_headers = {'x-apikey': config.file_api_key}
+            file_response = requests.get(file_endpoint, headers=file_headers)
+            # load file output to a python object
+            file_details = json.loads(file_response.text)   
 
-        # ignore Exceptions being outputted to user.    
-        with suppress (KeyError):
+            # ignore Exceptions being outputted to user.    
             # check 'error' key in Json output, if True, file hasnt been submitted to any engines yet
             if 'error' in file_details:
                 # call function from data_visualization module
-                dv.draw_pie(labels=['Unknown File'], values=[100], colors = ['green'])
-                file_is_not_suspicious=[uploaded_file_hash,'No threat']
+                dv.draw_pie(labels=['No Threat Detected'], values=[100], colors = ['green'])
+                file_is_not_suspicious=[uploaded_file_hash,'No threat detected']
                 st.write(pd.DataFrame(file_is_not_suspicious, index=['File Hash', 'File Status'], columns=['Details']) )
             
             else:
@@ -97,7 +94,10 @@ if datavisual_choice =="File Upload":
                     normal_timestamp.append(datetime.fromtimestamp(i))
                 
                 st.write(pd.DataFrame(normal_timestamp, index=['Creation Date','Submission Date','Last Analysis Date'], columns=['Dates']))
-
+    except (ConnectionError):
+        dv.svg_assets(image="Assets/404.svg")
+    except (NameError):
+        pass
 
 
 # Cyber Intelligence Page.
@@ -106,31 +106,37 @@ if datavisual_choice == "Compromised Credentials":
     tools_choice = st.selectbox("Cyber Intelligence Tools:",["—", "Email", "IP", "URL"])
             
     if tools_choice == "Email":
-        st.markdown("Check your **Email** status against a collection of publically available data breaches")
-        # E-mail API endpoint - 'http://emailrep.io/bsheffield432@gmail.com'
-        email_input = st.text_input('Input Email')
-        email_query = ['http://emailrep.io/']
-        # append url with text_input data
-        email_query.append(email_input)
-        email_status = "".join(email_query)
-        email_response = requests.get('{}'.format(email_status))
-        email_details =json.loads(email_response.text)
-        #st.write(email_details)
-        # access values from *emails_details* JSON object
-        # validate email input
-        email_regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'        
-        if 'status' in email_details:
-            st.error("Exceeded daily Limit. please wait 24 hrs or visit emailrep.io/key for an api key")
-        elif len(email_input) == 0:
-            pass
-        elif (re.search(email_regex,email_input)):
-            email_is_suspicious=[email_details['email'],email_details['details']['blacklisted'],email_details['suspicious'],email_details['details']['credentials_leaked'],email_details['details']['malicious_activity'],email_details['details']['spam']]
-            #draw a table with *email_is_suspicious* dataframe    
-            
-            pd.set_option('max_colwidth', 800)
-            st.write(pd.DataFrame(email_is_suspicious, index=['Email','Blacklisted','Suspicious','Credentials Leaked','Malicious', 'Spam'], columns=['Details']))
-        else:
-            st.error("Invalid Email, Check Email Address again")
+        try:
+            st.markdown("Check your **Email** status against a collection of publically available data breaches")
+            dv.svg_assets(image="Assets/inbox.svg")
+            # E-mail API endpoint - 'http://emailrep.io/bsheffield432@gmail.com'
+            email_input = st.text_input('Input Email')
+            email_query = ['http://emailrep.io/']
+            # append url with text_input data
+            email_query.append(email_input)
+            email_status = "".join(email_query)
+            email_response = requests.get('{}'.format(email_status))
+            email_details =json.loads(email_response.text)
+            st.write(email_details)
+            # access values from *emails_details* JSON object
+            # validate email input
+            regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
+            if (re.search(regex,email_input)):
+                email_is_suspicious=[email_details['email'],email_details['suspicious'],email_details['details']['credentials_leaked'],email_details['details']['malicious_activity'],email_details['details']['spam']]
+                #draw a table with *email_is_suspicious* dataframe    
+                st.write(pd.DataFrame(email_is_suspicious, index=['Email','Suspicious','Credentials Leaked','Malicious', 'Spam'], columns=['Details']))
+            elif not (re.search(regex,email_input)):
+                st.error("Invalid Email, Check Email Again")
+            elif 'fail' in email_details:
+                st.error("Exceeded daily Limit. please wait 24 hrs or visit emailrep.io/key for an api key")
+            elif len(email_input) == 0:
+                pass
+        except (KeyError,NameError):
+            st.error("Invalid Email, Check Email Again")
+        except (ConnectionError):
+            dv.svg_assets(image="Assets/404.svg")
+
+        
 
 
     if tools_choice == "IP":        
@@ -164,43 +170,48 @@ if datavisual_choice == "Compromised Credentials":
                 ip_geo_values = pd.DataFrame(ip_map)
                 st.info(("""**Please note**:The point-based map is interactive, you can zoom with scrolling and hover on data points."""))
                 
-                st.pydeck_chart(pdk.Deck(
-                map_style='mapbox://styles/mapbox/dark-v9',
-                initial_view_state=pdk.ViewState(
-                    latitude=ip_geo_values.at[0,0],
-                    longitude=ip_geo_values.at[1,0],
-                    zoom=11,
-                    pitch=50,
+            st.pydeck_chart(pdk.Deck(
+            map_style='mapbox://styles/mapbox/dark-v9',
+            initial_view_state=pdk.ViewState(
+                latitude=ip_geo_values.at[0,0],
+                longitude=ip_geo_values.at[1,0],
+                zoom=11,
+                pitch=50,
+            ),
+            layers=[
+                pdk.Layer(
+                    'HexagonLayer',
+                    data=ip_geo_values,
+                    get_position='[longitude, latitude]',
+                    radius=200,
+                    elevation_scale=4,
+                    elevation_range=[0, 1000],
+                    pickable=True,
+                    extruded=True,
                 ),
-                layers=[
-                    pdk.Layer(
-                        'HexagonLayer',
-                        data=ip_geo_values,
-                        get_position='[longitude, latitude]',
-                        radius=200,
-                        elevation_scale=4,
-                        elevation_range=[0, 1000],
-                        pickable=True,
-                        extruded=True,
-                    ),
-                    pdk.Layer(
-                        'ScatterplotLayer',
-                        data=ip_geo_values,
-                        get_position='[longitude, latitude]',
-                        get_fill_color='[60, 220,255]',
-                        get_radius=200,
-                    ),
-                ],
+                pdk.Layer(
+                    'ScatterplotLayer',
+                    data=ip_geo_values,
+                    get_position='[longitude, latitude]',
+                    get_fill_color='[60, 220,255]',
+                    get_radius=200,
+                ),
+            ],
             ))
         except ValueError:
             st.error(f"{ip_input}, Is an invalid IP address")
+        except (ConnectionError):
+            dv.svg_assets(image="Assets/404.svg")
+        except (NameError):
+            pass
+
     
     if tools_choice == "URL":
         try:
             # URL API endpoint
             url_endpoint = 'https://www.virustotal.com/vtapi/v2/url/report'
             url_input = st.text_input('Input URL',)
-            #Replace `test` with your API Key
+            #Replace `config.url_api` with your API Key
             url_params = {'apikey': config.url_api_key, 'resource':url_input}
             url_response = requests.get(url_endpoint, params=url_params)
             #st.json(url_response.text) 
@@ -213,12 +224,18 @@ if datavisual_choice == "Compromised Credentials":
                 dv.draw_pie(labels=['Threats', 'No Threats'], values=[url_details['positives'],url_details['total']], colors=['red','green'])
                 dv.draw_stacked_bar(detected=url_details['positives'], scanned_engines=url_details['total'])
                 st.write(pd.DataFrame(scanned_url_engines, index=['Scan ID','URL Resource','Scan Date'], columns=['Details']))
-        except:
-            st.error("Sorry! Invalid URL or URL does not exist in scanned engine's databases")
-
+        except KeyError:
+            st.warning(f'Resource {url_input} does not exist in scanned engine\'s databases')
+        except (ConnectionError):
+            dv.svg_assets(image="Assets/404.svg")
+        except (NameError,TypeError):
+            pass
+        
 st.sidebar.header("Contribute")
+
 st.sidebar.info(
     ("This is an open source project and you are very welcome to contribute your awesome comments, questions, resources and apps as issues of or pull requests to the source code ")
     + "[GitHub](https://github.com/NuhMohammed/ThreatSense)."
 )
+
 

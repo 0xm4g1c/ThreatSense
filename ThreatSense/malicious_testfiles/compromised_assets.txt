@@ -5,7 +5,7 @@
     -
     - abuse@ipvolume.net
 **IP**
-    - 83.97.20.0
+    - 83.97.20.0 SAFE NOW.?!
     - 45.145.67.0
 **URL**
     -- Phishing sites
