@@ -9,5 +9,4 @@ IP_SECRET = environ['IP_SECRET']
 URL_KEY = environ['URL_KEY']
 URL_SECRET = environ['URL_SECRET']
 
-print (FILE_SECRET)
 

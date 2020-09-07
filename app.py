@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import pydeck as pdk
-import config
+import env
 import hashlib
 import json
 import re, validators
@@ -38,7 +38,7 @@ if datavisual_choice =="File Upload":
             uploaded_file_hash = hashlib.md5(bytes).hexdigest()
             # add hash to endpoint
             file_endpoint = "https://www.virustotal.com/api/v3/files/" +  uploaded_file_hash
-            file_headers = {'x-apikey': config.file_api_key}
+            file_headers = {'x-apikey': env.FILE_SECRET}
             file_response = requests.get(file_endpoint, headers=file_headers)
             # load file output to a python object
             file_details = json.loads(file_response.text)   
@@ -144,7 +144,7 @@ if datavisual_choice == "Compromised Credentials":
         try:
             ip_input = st.text_input('Input IP Address',)
             # Create an instance of an ipdata object. Replace "config.ip_api_key" with your API Key
-            ipdata = ipdata.IPData(config.ip_api_key)
+            ipdata = ipdata.IPData(env.IP_SECRET)
             ip_response = ipdata.lookup("{}".format(ip_input.lstrip()))
             st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
             # drawing IP locality map. Append Lat and Lon values to empty list
@@ -212,7 +212,7 @@ if datavisual_choice == "Compromised Credentials":
             url_endpoint = 'https://www.virustotal.com/vtapi/v2/url/report'
             url_input = st.text_input('Input URL',)
             #Replace `config.url_api` with your API Key
-            url_params = {'apikey': config.url_api_key, 'resource':url_input}
+            url_params = {'apikey': env.URL_SECRET, 'resource':url_input}
             url_response = requests.get(url_endpoint, params=url_params)
             #st.json(url_response.text) 
             url_details = json.loads(url_response.text)  
