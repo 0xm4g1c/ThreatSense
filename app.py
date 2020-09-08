@@ -8,6 +8,7 @@ import re, validators
 import plotly.graph_objects as go
 import data_visualization as dv
 import os
+#import config
 from requests.exceptions import ConnectionError
 from contextlib import suppress
 from ipdata import ipdata
@@ -15,10 +16,10 @@ from datetime import datetime, date
 
 st.title("ThreatSense :computer:")
 
-# confi vars from Heroku dashboard
-file_secret = os.environ.get('FILE')
-ip_secret = os.environ.get('IP')
-url_secret = os.environ.get('URL')
+# config vars from Heroku dashboard
+file_secret = os.getenv('file')
+ip_secret = os.getenv('ip')
+url_secret = os.getenv('url')
 
 
 # sidebars
@@ -44,7 +45,7 @@ if datavisual_choice =="File Upload":
             uploaded_file_hash = hashlib.md5(bytes).hexdigest()
             # add hash to endpoint
             file_endpoint = "https://www.virustotal.com/api/v3/files/" +  uploaded_file_hash
-            file_headers = {'x-apikey': file_secret}
+            file_headers = {'x-apikey': config.file_api_key}
             file_response = requests.get(file_endpoint, headers=file_headers)
             # load file output to a python object
             file_details = json.loads(file_response.text)   
@@ -102,7 +103,7 @@ if datavisual_choice =="File Upload":
                 st.write(pd.DataFrame(normal_timestamp, index=['Creation Date','Submission Date','Last Analysis Date'], columns=['Dates']))
     except (ConnectionError):
         dv.svg_assets(image="Assets/404.svg")
-    except (NameError):
+    except (NameError, KeyError):
         pass
 
 
@@ -143,7 +144,6 @@ if datavisual_choice == "Compromised Credentials":
             dv.svg_assets(image="Assets/404.svg")
 
         
-
 
     if tools_choice == "IP":        
         # IP API endpoint - http://api.cybercure.ai/feed/search?value=
