@@ -5,9 +5,9 @@ This web application functions by providing continuous data about potential thre
 
 ---
 ## Structure
-API services offered by VirusTotal were integrated into this web application. Public Endpoints provided by the [VirusTotal APIs](https://developers.virustotal.com/v3.0/reference#public-vs-premium-api) are freely accessible to all registered users.Main features of the public API include:
+API services offered by VirusTotal were integrated into this web application. Public Endpoints provided by the [VirusTotal APIs](https://developers.virustotal.com/v3.0/reference#public-vs-premium-api) are freely accessible to all registered users. Some features of the public API include:
 * 4 requests per minute.
-* Can be used in non-commercial products.
+* Usable in non-commercial products.
 
 ---
 # App Components
@@ -16,13 +16,13 @@ ThreatSense provides users the following services:
 ![Threatmap](readmeImages/threatmap.png)
 2. identification of threats pertaining to -
     - Files, 
-    ![f] (readmeImages/file_upload.png)
+    ![f](readmeImages/file_upload.png)
     - E-mails, 
     - IP Addressess and  
     - URLs
-    ![d] (readmeImages/dropdown.png)
+    ![d](readmeImages/dropdown.png)
  3. Map showing origin of an IP Address
-    ![map] (readmeImages/ip_map.png)
+    ![map](readmeImages/ip_map.png)
 
  
 ## Built With
