@@ -13,14 +13,17 @@ API services offered by VirusTotal were integrated into this web application. Pu
 # App Components
 ThreatSense provides users the following services:
 1. Kaspersky's own real-time threatmap.
-![Threatmap](https://drive.google.com/drive/u/1/folders/1R8eLy0uVBtvOoj-8otYCOlMsVO5eseSq)
+![Threatmap](readmeImages/threatmap.png)
 2. identification of threats pertaining to -
     - Files, 
+    ![f] (readmeImages/file_upload.png)
     - E-mails, 
     - IP Addressess and  
     - URLs
+    ![d] (readmeImages/dropdown.png)
  3. Map showing origin of an IP Address
- ![Image of Yaktocat](https://octodex.github.com/images/yaktocat.png)
+    ![map] (readmeImages/ip_map.png)
+
  
 ## Built With
 * [Streamlit](https://www.streamlit.io/) - Open-source Python library that makes it easy to build beautiful custom web-apps for machine learning and data science.
