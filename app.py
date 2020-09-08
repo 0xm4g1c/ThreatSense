@@ -33,7 +33,7 @@ if datavisual_choice == "Home Page":
     dv.threatmap()
     
 # File upload
-st.set_option('deprecation.showfileUploaderEncoding', False)
+st.set_option('deprecation.showfileUploaderEncoding',False)
 if datavisual_choice =="File Upload":
     st.write("### Scan files for known threats")
     dv.svg_assets(image="Assets/my_files.svg")
@@ -103,6 +103,7 @@ if datavisual_choice =="File Upload":
                 st.write(pd.DataFrame(normal_timestamp, index=['Creation Date','Submission Date','Last Analysis Date'], columns=['Dates']))
     except (ConnectionError):
         dv.svg_assets(image="Assets/404.svg")
+        dv.page_404()
     except (NameError, KeyError):
         pass
 
@@ -124,7 +125,7 @@ if datavisual_choice == "Compromised Credentials":
             email_status = "".join(email_query)
             email_response = requests.get('{}'.format(email_status))
             email_details =json.loads(email_response.text)
-            st.write(email_details)
+            # st.write(email_details)
             # access values from *emails_details* JSON object
             # validate email input
             regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
@@ -142,6 +143,8 @@ if datavisual_choice == "Compromised Credentials":
             st.error("Invalid Email, Check Email Again")
         except (ConnectionError):
             dv.svg_assets(image="Assets/404.svg")
+            dv.page_404()
+
 
         
 
@@ -208,7 +211,8 @@ if datavisual_choice == "Compromised Credentials":
             st.error(f"{ip_input}, Is an invalid IP address")
         except (ConnectionError):
             dv.svg_assets(image="Assets/404.svg")
-        except (NameError):
+            dv.page_404()
+        except (NameError, KeyError):
             pass
 
     
@@ -234,6 +238,7 @@ if datavisual_choice == "Compromised Credentials":
             st.warning(f'Resource {url_input} does not exist in scanned engine\'s databases')
         except (ConnectionError):
             dv.svg_assets(image="Assets/404.svg")
+            dv.page_404()
         except (NameError,TypeError):
             pass
         

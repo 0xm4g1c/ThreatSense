@@ -51,6 +51,10 @@ def svg_assets(image):
         line_string=''.join(lines)
         render_svg(line_string)
 
+def page_404():
+    return st.markdown(f'''
+       <p style="text-align:center; font-weight:bold"> Page not found, Check Internet Connection. </p>
+    ''', unsafe_allow_html=True)
 
 def threatmap():
     return st.markdown(f'''
