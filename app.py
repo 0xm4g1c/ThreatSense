@@ -235,7 +235,7 @@ if datavisual_choice == "Compromised Credentials":
                 st.write(pd.DataFrame(scanned_url_engines, index=['Scan ID','URL Resource','Scan Date'], columns=['Details']))
         except KeyError:
             st.warning(f'Resource {url_input} does not exist in scanned engine\'s databases')
-        except (ConnectionError):
+        except (ConnectionError, ValueError):
             dv.svg_assets(image="Assets/404.svg")
             dv.page_404()
         except (NameError,TypeError):
