@@ -33,7 +33,6 @@ if datavisual_choice == "Home Page":
     dv.threatmap()
     
 # File upload
-st.set_option('deprecation.showfileUploaderEncoding',False)
 if datavisual_choice =="File Upload":
     st.write("### Scan files for known threats")
     dv.svg_assets(image="Assets/my_files.svg")
