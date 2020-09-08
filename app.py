@@ -45,7 +45,7 @@ if datavisual_choice =="File Upload":
             uploaded_file_hash = hashlib.md5(bytes).hexdigest()
             # add hash to endpoint
             file_endpoint = "https://www.virustotal.com/api/v3/files/" +  uploaded_file_hash
-            file_headers = {'x-apikey': config.file_api_key}
+            file_headers = {'x-apikey': file_secret}
             file_response = requests.get(file_endpoint, headers=file_headers)
             # load file output to a python object
             file_details = json.loads(file_response.text)   
