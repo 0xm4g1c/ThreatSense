@@ -24,16 +24,16 @@ url_secret = os.getenv('url')
 
 # sidebars
 datavisual_choice = st.sidebar.radio("Navigate Pages",
-("Home Page", "File Upload", "Compromised Credentials"))
+("Threat Map", "File Scanner", "Scan Credentials"))
 
 # welcome page
-if datavisual_choice == "Home Page":
+if datavisual_choice == "Threat Map":
     st.header("**Vulnerability Scanner for everyone**")
     st.write(" ### Find technical information about internet assets before **_HACKERS_** do")
     dv.threatmap()
     
-# File upload
-if datavisual_choice =="File Upload":
+# File Scanner
+if datavisual_choice =="File Scanner":
     st.write("### Scan files for known threats")
     dv.svg_assets(image="Assets/my_files.svg")
     try:
@@ -108,7 +108,7 @@ if datavisual_choice =="File Upload":
 
 
 # Cyber Intelligence Page.
-if datavisual_choice == "Compromised Credentials":
+if datavisual_choice == "Scan Credentials":
     st.markdown("**Choose tools from the dropdown**")
     tools_choice = st.selectbox("Cyber Intelligence Tools:",["—", "Email", "IP", "URL"])
             
@@ -144,9 +144,7 @@ if datavisual_choice == "Compromised Credentials":
             dv.svg_assets(image="Assets/404.svg")
             dv.page_404()
 
-
-        
-
+    # IP 
     if tools_choice == "IP":        
         # IP API endpoint - http://api.cybercure.ai/feed/search?value=
         try:
@@ -154,7 +152,6 @@ if datavisual_choice == "Compromised Credentials":
             # Create an instance of an ipdata object. Replace "config.ip_api_key" with your API Key
             ipdata = ipdata.IPData(ip_secret)
             ip_response = ipdata.lookup("{}".format(ip_input.lstrip()))
-            st.write("**Notice**: **_Only public IP Addresses can be searched for now_**")
             # drawing IP locality map. Append Lat and Lon values to empty list
             geo_loc= [ip_response.get("latitude"),ip_response.get("longitude"),ip_response.get("country_name"),ip_response.get("city")]
             # verify from nested dictionary, to be included in "is_Threat" column in table 
@@ -214,7 +211,7 @@ if datavisual_choice == "Compromised Credentials":
         except (NameError, KeyError):
             pass
 
-    
+    # URL 
     if tools_choice == "URL":
         try:
             # URL API endpoint
@@ -235,10 +232,10 @@ if datavisual_choice == "Compromised Credentials":
                 st.write(pd.DataFrame(scanned_url_engines, index=['Scan ID','URL Resource','Scan Date'], columns=['Details']))
         except KeyError:
             st.warning(f'Resource {url_input} does not exist in scanned engine\'s databases')
-        except (ConnectionError, ValueError):
+        except (ConnectionError):
             dv.svg_assets(image="Assets/404.svg")
             dv.page_404()
-        except (NameError,TypeError):
+        except (NameError,TypeError, ValueError):
             pass
         
 st.sidebar.header("Contribute")
