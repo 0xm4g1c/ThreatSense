@@ -1,4 +1,4 @@
-requests==2.23.0
+requests==2.31.0
 ipdata==3.2
 plotly==4.7.1
 pandas==1.0.3
